@@ -56,7 +56,7 @@ cat <<EOF
 Run "m help" for help with the build system itself.
 
 Invoke ". build/envsetup.sh" from your shell to add the following functions to your environment:
-- lunch:      lunch <product_name>-<release_type>-<build_variant>
+- lunch:      lunch <product_name>-<build_variant>
               Selects <product_name> as the product to build, and <build_variant> as the variant to
               build, and stores those selections in the environment to be read by subsequent
               invocations of 'm' etc.
@@ -103,7 +103,7 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 
 EOF
 
-    __print_lineage_functions_help
+    __print_orion_functions_help
 
 cat <<EOF
 
@@ -210,12 +210,12 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    if (echo -n $1 | grep -q -e "^lineage_") ; then
-        LINEAGE_BUILD=$(echo -n $1 | sed -e 's/^lineage_//g')
+    if (echo -n $1 | grep -q -e "^orion_") ; then
+        ORION_BUILD=$(echo -n $1 | sed -e 's/^orion_//g')
     else
-        LINEAGE_BUILD=
+        ORION_BUILD=
     fi
-    export LINEAGE_BUILD
+    export ORION_BUILD
 
         TARGET_PRODUCT=$1 \
         TARGET_RELEASE=$2 \
@@ -498,7 +498,7 @@ function addcompletions()
 
 function multitree_lunch_help()
 {
-    echo "usage: lunch PRODUCT-RELEASE-VARIANT" 1>&2
+    echo "usage: lunch PRODUCT-VARIANT" 1>&2
     echo "    Set up android build environment based on a product short name and variant" 1>&2
     echo 1>&2
     echo "lunch COMBO_FILE VARIANT" 1>&2
@@ -740,7 +740,7 @@ function print_lunch_menu()
 {
     local uname=$(uname)
     local choices
-    choices=$(TARGET_BUILD_APPS= TARGET_PRODUCT= TARGET_RELEASE= TARGET_BUILD_VARIANT= get_build_var COMMON_LUNCH_CHOICES 2>/dev/null)
+    choices=$(TARGET_BUILD_APPS= TARGET_PRODUCT= TARGET_BUILD_VARIANT= get_build_var COMMON_LUNCH_CHOICES 2>/dev/null)
     local ret=$?
 
     echo
@@ -786,8 +786,8 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo "Which would you like? [aosp_arm-trunk_staging-eng]"
-        echo -n "Pick from common choices above (e.g. 13) or specify your own (e.g. aosp_barbet-trunk_staging-eng): "
+        echo "Which would you like? [aosp_arm-eng]"
+        echo -n "Pick from common choices above (e.g. 13) or specify your own (e.g. aosp_barbet-eng): "
         read answer
         used_lunch_menu=1
     fi
@@ -796,7 +796,7 @@ function lunch()
 
     if [ -z "$answer" ]
     then
-        selection=aosp_arm-trunk_staging-eng
+        selection=aosp_arm-eng
     elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
     then
         local choices=($(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES))
@@ -816,27 +816,27 @@ function lunch()
 
     export TARGET_BUILD_APPS=
 
-    # This must be <product>-<release>-<variant>
-    local product release variant
+    # This must be <product>-<variant>
+    local product variant
     # Split string on the '-' character.
-    IFS="-" read -r product release variant <<< "$selection"
+    IFS="-" read -r product variant <<< "$selection"
 
-    if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
+    if [[ -z "$product" ]] || [[ -z "$variant" ]]
     then
         echo
         echo "Invalid lunch combo: $selection"
-        echo "Valid combos must be of the form <product>-<release>-<variant>"
+        echo "Valid combos must be of the form <product>-<variant>"
         return 1
     fi
 
-    if ! check_product $product $release
+    if ! check_product $product
     then
         # if we can't find a product, try to grab it off the LineageOS GitHub
         T=$(gettop)
         cd $T > /dev/null
         vendor/lineage/build/tools/roomservice.py $product
         cd - > /dev/null
-        check_product $product $release
+        check_product $product
     else
         T=$(gettop)
         cd $T > /dev/null
@@ -846,7 +846,7 @@ function lunch()
 
     TARGET_PRODUCT=$product \
     TARGET_BUILD_VARIANT=$variant \
-    TARGET_RELEASE=$release \
+    
     build_build_var_cache
     if [ $? -ne 0 ]
     then
@@ -867,8 +867,7 @@ function lunch()
     fi
     export TARGET_PRODUCT=$(get_build_var TARGET_PRODUCT)
     export TARGET_BUILD_VARIANT=$(get_build_var TARGET_BUILD_VARIANT)
-    export TARGET_RELEASE=$release
-    # Note this is the string "release", not the value of the variable.
+    
     export TARGET_BUILD_TYPE=release
 
     local prebuilt_kernel=$(get_build_var TARGET_PREBUILT_KERNEL)
