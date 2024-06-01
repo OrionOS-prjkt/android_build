@@ -819,13 +819,13 @@ function lunch()
     # This must be <product>-<release>-<variant>
     local product release variant
     # Split string on the '-' character.
-    IFS="-" read -r product variant <<< "$selection"
+    IFS="-" read -r product release variant <<< "$selection"
 
     if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
     then
         echo
         echo "Invalid lunch combo: $selection"
-        echo "Valid combos must be of the form <product>-<release>-variant>"
+        echo "Valid combos must be of the form <product>-<release>-<variant>"
         return 1
     fi
 
@@ -836,7 +836,7 @@ function lunch()
         cd $T > /dev/null
         vendor/orion/build/tools/roomservice.py $product
         cd - > /dev/null
-        check_product $product
+        check_product $product $release
     else
         T=$(gettop)
         cd $T > /dev/null
